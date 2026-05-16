@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy – Stress Sentinel</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: #0a0a0a;
+      color: #d1d5db;
+      line-height: 1.7;
+      padding: 48px 24px 96px;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    .wordmark {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #00ff94;
+      margin-bottom: 48px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    .updated {
+      font-size: 13px;
+      color: #4b5563;
+      margin-bottom: 48px;
+    }
+    h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 40px 0 12px;
+    }
+    p { margin-bottom: 16px; font-size: 15px; color: #9ca3af; }
+    ul { margin: 0 0 16px 20px; }
+    li { font-size: 15px; color: #9ca3af; margin-bottom: 6px; }
+    a { color: #00ff94; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    hr { border: none; border-top: 1px solid #1e1e1e; margin: 40px 0; }
+    .contact {
+      background: #141414;
+      border: 1px solid #1e1e1e;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 40px;
+    }
+    .contact p { margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="wordmark">Stress Sentinel</div>
+
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: May 2026</p>
+
+    <p>
+      Stress Sentinel ("the App") is a personal biometric analysis tool that uses
+      data from connected wearable devices to detect patterns associated with
+      physiological burnout. This policy explains what data is accessed, how it is
+      used, and your rights.
+    </p>
+
+    <h2>Data We Access</h2>
+    <p>When you connect a wearable device account, the App requests access to:</p>
+    <ul>
+      <li>Heart rate variability (HRV / RMSSD)</li>
+      <li>Resting heart rate</li>
+      <li>Recovery scores</li>
+      <li>Basic profile information (name, email) for account identification</li>
+    </ul>
+    <p>
+      This data is sourced directly from the WHOOP or Garmin APIs using OAuth 2.0
+      authorization. The App only requests the minimum scopes required to perform
+      its analysis.
+    </p>
+
+    <h2>How We Use Your Data</h2>
+    <p>Your biometric data is used solely to:</p>
+    <ul>
+      <li>Compute readiness and burnout risk scores</li>
+      <li>Generate time-series forecasts of physiological load</li>
+      <li>Display historical trends in the App dashboard</li>
+    </ul>
+    <p>
+      We do not use your data for advertising, profiling, or any purpose beyond
+      the real-time analysis described above.
+    </p>
+
+    <h2>Data Storage</h2>
+    <p>
+      The App runs locally on your device. Biometric data fetched from connected
+      accounts is held in memory during your session and is not persisted to any
+      external database or server. No biometric data is transmitted to third
+      parties.
+    </p>
+    <p>
+      OAuth access tokens are stored in your local application session only and
+      are discarded when the server process stops.
+    </p>
+
+    <h2>Data Sharing</h2>
+    <p>
+      We do not sell, trade, rent, or share your personal or biometric data with
+      any third party. The only outbound connections are to the official WHOOP and
+      Garmin APIs to retrieve your own data.
+    </p>
+
+    <h2>Data Retention</h2>
+    <p>
+      Because no data is persisted outside your local session, there is nothing to
+      retain or delete. Disconnecting your device account (via the App's settings)
+      immediately removes the OAuth token from memory.
+    </p>
+
+    <h2>Your Rights</h2>
+    <p>You may at any time:</p>
+    <ul>
+      <li>Disconnect your WHOOP or Garmin account from within the App</li>
+      <li>Revoke the App's OAuth access directly in your WHOOP or Garmin account settings</li>
+      <li>Request information about what data was accessed during a session</li>
+    </ul>
+
+    <h2>Children's Privacy</h2>
+    <p>
+      The App is not intended for use by individuals under the age of 18. We do
+      not knowingly collect data from minors.
+    </p>
+
+    <h2>Changes to This Policy</h2>
+    <p>
+      We may update this policy as the App evolves. The "Last updated" date at the
+      top of this page will reflect any changes. Continued use of the App after
+      changes are posted constitutes acceptance of the updated policy.
+    </p>
+
+    <hr />
+
+    <div class="contact">
+      <h2 style="margin-top:0">Contact</h2>
+      <p>
+        Questions about this policy? Email
+        <a href="mailto:m.morris@deeptempo.ai">m.morris@deeptempo.ai</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
