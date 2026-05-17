@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     whoop_client_secret: str = ""
     whoop_redirect_uri: str = "http://localhost:8000/api/auth/whoop/callback"
     cache_ttl_seconds: int = 3600
+    insights_cache_ttl_seconds: int = 21600
+    anthropic_api_key: str = ""
     allowed_origins: list[str] = ["http://localhost:5173"]
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}

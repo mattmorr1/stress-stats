@@ -25,7 +25,12 @@ class TTLCache:
 
 
 _cache = TTLCache(ttl_seconds=3600)
+_insights_cache = TTLCache(ttl_seconds=21600)
 
 
 def get_cache() -> TTLCache:
     return _cache
+
+
+def get_insights_cache() -> TTLCache:
+    return _insights_cache

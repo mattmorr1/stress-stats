@@ -7,6 +7,7 @@ import { TimelineChart } from './components/TimelineChart'
 import { ForecastStrip } from './components/ForecastStrip'
 import { StateCard } from './components/StateCard'
 import { SettingsPanel, type AnalysisSettings } from './components/SettingsPanel'
+import { InsightsPanel } from './components/InsightsPanel'
 import { fetchAuthStatus, getWhoopConnectUrl } from './api/auth'
 
 const queryClient = new QueryClient()
@@ -24,7 +25,6 @@ function Dashboard() {
     refetchInterval: false,
   })
 
-  // Detect OAuth callback result in URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('connected') === 'whoop') {
@@ -45,94 +45,92 @@ function Dashboard() {
   )
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen bg-[#f8fafc]">
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Header */}
         <div className="flex items-baseline justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">
               Stress Sentinel
             </h1>
-            <p className="text-gray-500 text-sm mt-0.5">
-              Burnout forecasting from biometric data
+            <p className="text-[#64748b] text-sm mt-0.5 font-mono">
+              burnout forecasting · biometric analysis
             </p>
           </div>
           {data && (
-            <span className="text-xs text-gray-600">
-              {isFetching ? 'Refreshing…' : `Updated ${new Date(data.generated_at).toLocaleTimeString()}`}
+            <span className="text-xs text-[#94a3b8] font-mono">
+              {isFetching ? 'refreshing…' : `↻ ${new Date(data.generated_at).toLocaleTimeString()}`}
             </span>
           )}
         </div>
 
         {/* Whoop connect banner */}
         {settings.source === 'whoop' && authStatus && !authStatus.whoop_connected && (
-          <div className="bg-[#141414] border border-[#1e1e1e] rounded-2xl p-6 flex items-center justify-between mb-2">
+          <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5 flex items-center justify-between mb-4 shadow-sm">
             <div>
-              <p className="text-white font-medium">Connect your Whoop</p>
-              <p className="text-gray-500 text-sm mt-0.5">
-                Authorize access to your recovery data to get started.
+              <p className="text-[#0f172a] font-semibold text-sm">Connect your Whoop</p>
+              <p className="text-[#64748b] text-xs mt-0.5">
+                Authorize OAuth access to load your recovery data.
               </p>
               {!authStatus.whoop_client_configured && (
-                <p className="text-amber-500 text-xs mt-1">
-                  WHOOP_CLIENT_ID missing in .env — add your developer credentials first.
+                <p className="text-amber-600 text-xs mt-1 font-mono">
+                  WHOOP_CLIENT_ID missing in .env
                 </p>
               )}
             </div>
             <a
               href={getWhoopConnectUrl()}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-black transition-opacity hover:opacity-80"
-              style={{ backgroundColor: '#00ff94' }}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-80"
+              style={{ backgroundColor: '#0ea5e9' }}
             >
-              Connect Whoop
+              Connect →
             </a>
           </div>
         )}
 
-        {/* Loading state */}
+        {/* Loading */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center h-72 gap-3 text-gray-600">
-            <div className="w-8 h-8 rounded-full border-2 border-[#00ff94] border-t-transparent animate-spin" />
-            <span className="text-sm">Fetching {settings.source} data…</span>
+          <div className="flex flex-col items-center justify-center h-72 gap-3 text-[#94a3b8]">
+            <div className="w-7 h-7 rounded-full border-2 border-[#0ea5e9] border-t-transparent animate-spin" />
+            <span className="text-sm font-mono">fetching {settings.source} data…</span>
           </div>
         )}
 
-        {/* Error state */}
+        {/* Error */}
         {isError && (
-          <div className="bg-red-950/30 border border-red-900/60 rounded-2xl p-6 text-red-400">
-            <p className="font-medium mb-1">Connection failed</p>
-            <p className="text-sm text-red-500">{(error as Error).message}</p>
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-red-700">
+            <p className="font-semibold text-sm mb-1">Connection failed</p>
+            <p className="text-xs font-mono text-red-500">{(error as Error).message}</p>
           </div>
         )}
 
         {/* Main content */}
         {data && (
           <div className="space-y-4">
-
-            {/* Row 1: Rings + State */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-[#141414] rounded-2xl p-8 border border-[#1e1e1e] flex items-center justify-center">
+              <div className="bg-white rounded-2xl p-8 border border-[#e2e8f0] shadow-sm flex items-center justify-center">
                 <RingDashboard latest={data.latest} />
               </div>
               <StateCard latest={data.latest} />
             </div>
 
-            {/* Row 2: Forecast */}
             <ForecastStrip forecast={data.forecast} />
-
-            {/* Row 3: Timeline */}
+            <InsightsPanel
+              source={settings.source}
+              start={settings.start}
+              end={settings.end}
+              latest={data.latest}
+            />
             <TimelineChart history={data.history} />
-
-            {/* Row 4: Settings */}
             <SettingsPanel settings={settings} onChange={setSettings} />
 
-            <p className="text-xs text-gray-700 text-center pb-4">
-              Source: {data.source.toUpperCase()} · {data.history.length} days of data
+            <p className="text-xs text-[#94a3b8] font-mono text-center pb-4">
+              {data.source.toUpperCase()} · {data.history.length} days
             </p>
           </div>
         )}
 
-        {/* Empty state — settings visible before first load */}
         {!isLoading && !isError && !data && (
           <SettingsPanel settings={settings} onChange={setSettings} />
         )}

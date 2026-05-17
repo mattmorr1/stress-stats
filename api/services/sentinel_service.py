@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import math
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
+
+import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -10,17 +13,120 @@ from proto import GarminStressSentinel, SentinelCoreMath  # noqa: E402
 from whoop_client import WhoopStressSentinel  # noqa: E402
 
 from api.config import settings
-from api.models import AnalysisResponse, DailyRecord, ForecastDay
+from api.models import AnalysisResponse, DailyRecord, ForecastDay, ScoreBreakdown, WorkoutSummary
 from api.whoop_oauth import get_token
 from api.services.score_mapper import (
-    decoupling_to_burnout_risk,
+    composite_burnout_risk,
     magnitude_z_to_hrv_strength,
+    score_breakdown,
     strain_z_to_health,
 )
 
 
-def _build_daily_record(idx, row) -> DailyRecord:
+def _ar_forecast(df, days_ahead: int = 3):
+    """
+    Mean-reverting AR(1) forecast with exponentially-weighted initialization.
+    Produces genuinely distinct values per day by blending momentum decay
+    with pull toward the user's long-term autonomic baseline.
+    Returns (forecasts, lo_bounds, hi_bounds, confidence, trend_direction).
+    """
+    series = df["decoupling_idx"].dropna().values
+    if len(series) < 7:
+        return None
+
+    n = len(series)
+    long_mean = float(np.mean(series[-min(60, n):]))
+    recent_std = float(np.std(series[-min(14, n):])) if n >= 3 else 1.0
+
+    # EWM-weighted current state
+    recent_n = min(14, n)
+    w = np.exp(np.linspace(-2.0, 0.0, recent_n))
+    w /= w.sum()
+    current = float(np.dot(w, series[-recent_n:]))
+
+    # Weighted linear trend over last 7 days
+    trend_n = min(7, n)
+    xw = np.exp(np.linspace(-1.0, 0.0, trend_n))
+    xw /= xw.sum()
+    xs = np.arange(trend_n, dtype=float)
+    ys = series[-trend_n:]
+    xm, ym = float(np.dot(xw, xs)), float(np.dot(xw, ys))
+    denom = float(np.dot(xw, (xs - xm) ** 2)) + 1e-10
+    trend = float(np.dot(xw, (xs - xm) * (ys - ym))) / denom
+
+    # Mean-reversion: 20% pull toward long-term mean per day
+    # Momentum: halves each step, so days 1/2/3 carry 100%/50%/25% of initial slope
+    mr = 0.20
+    momentum_decay = 0.50
+
+    forecasts, lo_bounds, hi_bounds = [], [], []
+    val, t = current, trend
+    for i in range(1, days_ahead + 1):
+        val = val + t + (long_mean - val) * mr
+        t *= momentum_decay
+        sigma = recent_std * (0.4 + 0.35 * i)  # uncertainty grows with horizon
+        forecasts.append(float(val))
+        lo_bounds.append(float(val - sigma))
+        hi_bounds.append(float(val + sigma))
+
+    confidence = float(np.clip(1.0 - recent_std / 4.0, 0.15, 0.90))
+
+    net_change = forecasts[-1] - current
+    if net_change > 0.12:
+        trend_direction = "improving"
+    elif net_change < -0.12:
+        trend_direction = "declining"
+    else:
+        trend_direction = "stable"
+
+    return forecasts, lo_bounds, hi_bounds, confidence, trend_direction
+
+
+def _nan_to_none(val) -> float | None:
+    if val is None:
+        return None
+    try:
+        f = float(val)
+        return None if math.isnan(f) else f
+    except (TypeError, ValueError):
+        return None
+
+
+def _enrich_features(df):
+    """
+    Post-processing on top of SentinelCoreMath.engineer_features():
+
+    1. Lag strain_z by 1 day — HRV suppression peaks 24-48h after load, not same-day.
+    2. Recompute decoupling_idx with the lagged strain signal.
+    3. ACWR: 7-day acute / 28-day chronic rolling mean of red_strain.
+       ACWR > 1.3 = danger zone; > 1.5 = high injury/burnout risk.
+    4. hr_trend_z: resting HR z-score against 7-day rolling baseline.
+       Persistently elevated resting HR is one of the clearest overtraining signals.
+    """
+    df = df.copy()
+
+    df["strain_z"] = df["strain_z"].shift(1).fillna(0.0)
+    df["decoupling_idx"] = df["magnitude_z"] - df["strain_z"]
+
+    acute   = df["red_strain"].rolling(7,  min_periods=3).mean()
+    chronic = df["red_strain"].rolling(28, min_periods=7).mean()
+    df["acwr"] = (acute / chronic.where(chronic > 0)).round(3)
+
+    if "resting_hr" in df.columns and df["resting_hr"].notna().sum() >= 3:
+        hr_mean = df["resting_hr"].rolling(7, min_periods=3).mean()
+        hr_std  = df["resting_hr"].rolling(7, min_periods=3).std()
+        df["hr_trend_z"] = ((df["resting_hr"] - hr_mean) / hr_std.where(hr_std > 0)).round(3)
+    else:
+        df["hr_trend_z"] = np.nan
+
+    return df
+
+
+def _build_daily_record(idx, row, workouts: list[dict] | None = None) -> DailyRecord:
     d = idx.date() if hasattr(idx, "date") else idx
+    acwr       = _nan_to_none(row.get("acwr"))
+    hr_trend_z = _nan_to_none(row.get("hr_trend_z"))
+    breakdown  = score_breakdown(float(row["decoupling_idx"]), acwr, hr_trend_z)
     return DailyRecord(
         date=d,
         resting_hr=float(row["resting_hr"]) if row.get("resting_hr") is not None else None,
@@ -31,11 +137,15 @@ def _build_daily_record(idx, row) -> DailyRecord:
         volatility_z=float(row["volatility_z"]),
         strain_z=float(row["strain_z"]),
         decoupling_idx=float(row["decoupling_idx"]),
-        burnout_risk_score=decoupling_to_burnout_risk(row["decoupling_idx"]),
+        burnout_risk_score=breakdown["total"],
         hrv_strength_score=magnitude_z_to_hrv_strength(row["magnitude_z"]),
         strain_health_score=strain_z_to_health(row["strain_z"]),
+        acwr=round(acwr, 3) if acwr is not None else None,
+        hr_trend_z=round(hr_trend_z, 3) if hr_trend_z is not None else None,
+        score_breakdown=ScoreBreakdown(**breakdown),
         readiness_state=row["readiness_state"],
         anomaly=int(row["anomaly"]),
+        workouts=[WorkoutSummary(**w) for w in (workouts or [])],
     )
 
 
@@ -60,19 +170,40 @@ def run_analysis(source: str, start: str, end: str) -> AnalysisResponse:
     df = SentinelCoreMath.engineer_features(raw_df)
     df = SentinelCoreMath.classify_readiness_state(df)
     df = SentinelCoreMath.run_anomaly_detection(df)
-    forecast_df = SentinelCoreMath.forecast_burnout(df, days_ahead=3)
+    df = _enrich_features(df)  # lag strain, add ACWR + hr_trend_z after proto.py processing
 
-    history = [_build_daily_record(idx, row) for idx, row in df.iterrows()]
+    workouts_by_date: dict[str, list[dict]] = {}
+    if source == "whoop":
+        try:
+            workouts_by_date = engine.pull_workouts(start, end)
+        except Exception:
+            pass  # workouts are non-critical; proceed without them
+
+    history = [
+        _build_daily_record(idx, row, workouts_by_date.get(
+            (idx.date() if hasattr(idx, "date") else idx).isoformat(), []
+        ))
+        for idx, row in df.iterrows()
+    ]
 
     forecast = []
-    if forecast_df is not None:
-        for idx, row in forecast_df.iterrows():
+    ar_result = _ar_forecast(df, days_ahead=3)
+    if ar_result is not None:
+        forecasts, lo_bounds, hi_bounds, confidence, trend_direction = ar_result
+        last_date = df.index[-1]
+        for i, (val, lo, hi) in enumerate(zip(forecasts, lo_bounds, hi_bounds)):
+            fdate = (last_date + timedelta(days=i + 1))
+            risk = "High Burnout Risk" if val < -1.5 else ("Watch Load" if val < 0 else "Optimal")
             forecast.append(
                 ForecastDay(
-                    date=idx.date() if hasattr(idx, "date") else idx,
-                    forecasted_decoupling=float(row["forecasted_decoupling"]),
-                    predicted_risk=row["predicted_risk"],
-                    burnout_risk_score=decoupling_to_burnout_risk(row["forecasted_decoupling"]),
+                    date=fdate.date() if hasattr(fdate, "date") else fdate,
+                    forecasted_decoupling=round(val, 3),
+                    predicted_risk=risk,
+                    burnout_risk_score=composite_burnout_risk(val),
+                    trend_direction=trend_direction,
+                    confidence=round(confidence, 2),
+                    lo_decoupling=round(lo, 3),
+                    hi_decoupling=round(hi, 3),
                 )
             )
 

@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
 
 from api.config import settings
-from api.whoop_oauth import clear_token, exchange_code, get_auth_url, is_authenticated
+from api.whoop_oauth import clear_token, exchange_code, get_auth_url, is_authenticated, verify_state
 
 router = APIRouter()
 
@@ -20,11 +20,13 @@ def whoop_login():
 
 
 @router.get("/api/auth/whoop/callback")
-def whoop_callback(code: str | None = None, error: str | None = None):
+def whoop_callback(code: str | None = None, error: str | None = None, state: str | None = None):
     if error or not code:
         return RedirectResponse(
             f"http://localhost:5173?auth_error={error or 'missing_code'}"
         )
+    if not verify_state(state or ""):
+        return RedirectResponse("http://localhost:5173?auth_error=invalid_state")
     try:
         exchange_code(code)
     except Exception as e:
