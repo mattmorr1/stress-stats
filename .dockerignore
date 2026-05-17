@@ -1,0 +1,13 @@
+frontend/
+garmin_app/
+docs/
+.env
+.env.*
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+*.md
+debug_api.py
