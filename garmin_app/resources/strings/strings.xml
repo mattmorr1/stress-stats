@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<strings>
+  <string id="AppName">Stress Sentinel</string>
+  <string id="Loading">Fetching data…</string>
+  <string id="NoPhone">Connect to phone</string>
+  <string id="Error">Data unavailable</string>
+  <string id="Refresh">Hold MENU to refresh</string>
+  <string id="LabelRecovery">RECOVERY</string>
+  <string id="LabelSleep">SLEEP</string>
+  <string id="LabelHRV">BIOMETRICS</string>
+  <string id="LabelStrain">STRAIN</string>
+  <string id="LabelSlept">Slept</string>
+  <string id="LabelNeeded">Needed</string>
+  <string id="LabelPerformance">Performance</string>
+  <string id="LabelRHR">Resting HR</string>
+  <string id="LabelHRVSWS">HRV (SWS)</string>
+  <string id="LabelReadiness">Readiness</string>
+  <string id="LabelBurnout">Burnout Risk</string>
+  <string id="LabelTrend">Trend</string>
+  <string id="UnitBPM">bpm</string>
+  <string id="UnitMS">ms</string>
+  <string id="UnitOf21">/ 21</string>
+  <string id="UnitPct">%</string>
+  <string id="PageOf">/ 3</string>
+</strings>

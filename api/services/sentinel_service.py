@@ -10,10 +10,11 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from proto import GarminStressSentinel, SentinelCoreMath  # noqa: E402
-from whoop_client import WhoopStressSentinel  # noqa: E402
+from whoop_client import WhoopStressSentinel               # noqa: E402
+from garmin_fit_client import GarminFitSentinel            # noqa: E402
 
 from api.config import settings
-from api.models import AnalysisResponse, DailyRecord, ForecastDay, ScoreBreakdown, WorkoutSummary
+from api.models import AnalysisResponse, DailyRecord, ForecastDay, GarminRecoveryDetail, ScoreBreakdown, WorkoutSummary
 from api.whoop_oauth import get_token
 from api.services.score_mapper import (
     composite_burnout_risk,
@@ -127,6 +128,21 @@ def _build_daily_record(idx, row, workouts: list[dict] | None = None) -> DailyRe
     acwr       = _nan_to_none(row.get("acwr"))
     hr_trend_z = _nan_to_none(row.get("hr_trend_z"))
     breakdown  = score_breakdown(float(row["decoupling_idx"]), acwr, hr_trend_z)
+
+    # Garmin-specific enrichment — only present when GarminFitSentinel is used
+    garmin_recovery = None
+    recovery_whoop  = _nan_to_none(row.get("recovery_whoop"))
+    if recovery_whoop is not None:
+        garmin_recovery = GarminRecoveryDetail(
+            recovery_score   = recovery_whoop,
+            sleep_performance = float(row.get("sleep_performance") or 50.0),
+            strain_score     = _nan_to_none(row.get("strain_score")),
+            sleep_hours      = _nan_to_none(row.get("sleep_hours")),
+            sleep_need       = _nan_to_none(row.get("sleep_need")),
+            respiratory_rate = _nan_to_none(row.get("respiratory_rate")),
+            rmssd_sws        = _nan_to_none(row.get("rmssd_sws")),
+        )
+
     return DailyRecord(
         date=d,
         resting_hr=float(row["resting_hr"]) if row.get("resting_hr") is not None else None,
@@ -143,6 +159,7 @@ def _build_daily_record(idx, row, workouts: list[dict] | None = None) -> DailyRe
         acwr=round(acwr, 3) if acwr is not None else None,
         hr_trend_z=round(hr_trend_z, 3) if hr_trend_z is not None else None,
         score_breakdown=ScoreBreakdown(**breakdown),
+        garmin_recovery=garmin_recovery,
         readiness_state=row["readiness_state"],
         anomaly=int(row["anomaly"]),
         workouts=[WorkoutSummary(**w) for w in (workouts or [])],
@@ -151,7 +168,7 @@ def _build_daily_record(idx, row, workouts: list[dict] | None = None) -> DailyRe
 
 def run_analysis(source: str, start: str, end: str) -> AnalysisResponse:
     if source == "garmin":
-        engine = GarminStressSentinel(settings.garmin_email, settings.garmin_password)
+        engine = GarminFitSentinel(settings.garmin_email, settings.garmin_password)
     else:
         token_data = get_token()
         if not token_data:

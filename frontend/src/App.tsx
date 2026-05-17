@@ -8,6 +8,7 @@ import { ForecastStrip } from './components/ForecastStrip'
 import { StateCard } from './components/StateCard'
 import { SettingsPanel, type AnalysisSettings } from './components/SettingsPanel'
 import { InsightsPanel } from './components/InsightsPanel'
+import { GarminRecoveryCard } from './components/GarminRecoveryCard'
 import { fetchAuthStatus, getWhoopConnectUrl } from './api/auth'
 
 const queryClient = new QueryClient()
@@ -112,8 +113,15 @@ function Dashboard() {
               <div className="bg-white rounded-2xl p-8 border border-[#e2e8f0] shadow-sm flex items-center justify-center">
                 <RingDashboard latest={data.latest} />
               </div>
-              <StateCard latest={data.latest} />
+              {data.latest.garmin_recovery ? (
+                <GarminRecoveryCard recovery={data.latest.garmin_recovery} />
+              ) : (
+                <StateCard latest={data.latest} />
+              )}
             </div>
+            {data.latest.garmin_recovery && (
+              <StateCard latest={data.latest} />
+            )}
 
             <ForecastStrip forecast={data.forecast} />
             <InsightsPanel

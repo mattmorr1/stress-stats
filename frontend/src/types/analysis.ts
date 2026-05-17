@@ -12,6 +12,16 @@ export type ReadinessState =
 
 export type PredictedRisk = 'High Burnout Risk' | 'Watch Load' | 'Optimal'
 
+export interface GarminRecoveryDetail {
+  recovery_score: number
+  sleep_performance: number
+  strain_score: number | null
+  sleep_hours: number | null
+  sleep_need: number | null
+  respiratory_rate: number | null
+  rmssd_sws: number | null
+}
+
 export interface ScoreBreakdown {
   base_risk: number
   acwr_penalty: number
@@ -35,6 +45,7 @@ export interface DailyRecord {
   acwr: number | null
   hr_trend_z: number | null
   score_breakdown: ScoreBreakdown | null
+  garmin_recovery: GarminRecoveryDetail | null
   readiness_state: ReadinessState
   anomaly: -1 | 1
   workouts: WorkoutSummary[]

@@ -21,6 +21,16 @@ class WorkoutSummary(BaseModel):
     strain: Optional[float]
 
 
+class GarminRecoveryDetail(BaseModel):
+    recovery_score: float
+    sleep_performance: float
+    strain_score: float | None = None
+    sleep_hours: float | None = None
+    sleep_need: float | None = None
+    respiratory_rate: float | None = None
+    rmssd_sws: float | None = None
+
+
 class ScoreBreakdown(BaseModel):
     base_risk: float
     acwr_penalty: float
@@ -44,6 +54,7 @@ class DailyRecord(BaseModel):
     acwr: Optional[float] = None
     hr_trend_z: Optional[float] = None
     score_breakdown: Optional[ScoreBreakdown] = None
+    garmin_recovery: Optional[GarminRecoveryDetail] = None
     readiness_state: ReadinessState
     anomaly: Literal[-1, 1]
     workouts: list[WorkoutSummary] = []

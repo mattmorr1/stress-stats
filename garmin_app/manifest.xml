@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<iq:manifest xmlns:iq="com.garmin.xml.app.v4" version="4">
+  <iq:application entry="StressSentinelApp" id="a3b2c1d0-e4f5-6789-abcd-ef0123456789"
+                  launcherIcon="@Drawables.LauncherIcon" minSdkVersion="3.2.0"
+                  name="@Strings.AppName" type="app" version="1.0.0">
+
+    <iq:products>
+      <!-- Fenix 7 series -->
+      <iq:product id="fenix7"/>
+      <iq:product id="fenix7s"/>
+      <iq:product id="fenix7x"/>
+      <!-- Fenix 6 series -->
+      <iq:product id="fenix6"/>
+      <iq:product id="fenix6s"/>
+      <iq:product id="fenix6x"/>
+      <!-- Forerunner -->
+      <iq:product id="fr955"/>
+      <iq:product id="fr965"/>
+      <iq:product id="fr745"/>
+      <iq:product id="fr945"/>
+      <!-- Epix -->
+      <iq:product id="epix2"/>
+      <iq:product id="epix2pro42mm"/>
+      <iq:product id="epix2pro47mm"/>
+      <iq:product id="epix2pro51mm"/>
+      <!-- Venu -->
+      <iq:product id="venu2"/>
+      <iq:product id="venu2plus"/>
+      <iq:product id="venu2s"/>
+    </iq:products>
+
+    <iq:permissions>
+      <iq:uses-permission id="Communications"/>
+      <iq:uses-permission id="UserProfile"/>
+    </iq:permissions>
+
+    <iq:languages>
+      <iq:language>eng</iq:language>
+    </iq:languages>
+
+  </iq:application>
+</iq:manifest>

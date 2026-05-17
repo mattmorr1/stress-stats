@@ -5,6 +5,7 @@ from api.config import settings
 from api.routers.analysis import router
 from api.routers.auth import router as auth_router
 from api.routers.insights import router as insights_router
+from api.routers.garmin_app import router as garmin_app_router
 
 app = FastAPI(
     title="Stress Sentinel API",
@@ -23,6 +24,7 @@ app.add_middleware(
 app.include_router(router)
 app.include_router(auth_router)
 app.include_router(insights_router)
+app.include_router(garmin_app_router)
 
 
 @app.get("/health")
